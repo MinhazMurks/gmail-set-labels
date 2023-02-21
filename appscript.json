@@ -1,0 +1,36 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Gmail",
+        "version": "v1",
+        "serviceId": "gmail"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.settings.basic"
+  ],
+  "runtimeVersion": "V8",
+  "gmail": {
+    "name": "Demo Gmail Addon",
+    "logoUrl": "https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_64dp.png",
+    "contextualTriggers": [
+      {
+        "unconditional": {},
+        "onTriggerFunction": "loadAddOn"
+      }
+    ],
+    "primaryColor": "#146b2e",
+    "openLinkUrlPrefixes": [
+      "https://developers.google.com/gmail"
+    ],
+    "version": "TRUSTED_TESTER_V2"
+  }
+}
