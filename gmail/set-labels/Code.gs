@@ -13,36 +13,34 @@ function labelEmails() {
   const numPages = Math.ceil(size / maxResults);
   var nextPageToken = threadsResponse.nextPageToken;
   var threads = threadsResponse.threads;
+  var seenSendersSet = new Set();
 
   for (var requests = 0; requests < numPages; requests++) {
     for (var thread of threads) {
       thread = Gmail.Users.Threads.get(userId, thread.id);
-      var label;
-      var addLabel = false;
-
       var messages = thread.messages;
-      for (var message of messages) {
-        var to = message.payload.headers.find(element => element.name == "To").value;
-        var from = message.payload.headers.find(element => element.name == "From").value;
-        var senderMatch = to.match(/\+(.*?)@/);
 
-        if (senderMatch == null) {
-          break;
+      if(messages.length > 0) {
+        var to = messages[0].payload.headers.find(element => element.name == "To").value;
+        var senderMatch = to.match(/\+(.*?)@/);
+        if (senderMatch != null) {
+          var sender = senderMatch[1];
+          Logger.log(`Checking against ${sender.toLowerCase()}`)
+          if(!seenSendersSet.has(sender.toLowerCase())) {
+            sender = sender.charAt(0).toUpperCase() + sender.slice(1);
+            var label = getOrCreateLabel(sender);
+            createLabelFilter(label, to);
+            var labels = getParentLabels(label);
+            labels.push(label.id);
+            Gmail.Users.Threads.modify(
+              { addLabelIds: labels },
+              userId,
+              thread.id
+            )
+            seenSendersSet.add(sender.toLowerCase());
+            Logger.log(`Added ${sender.toLowerCase()}`);
+          }
         }
-        addLabel = true;
-        var sender = senderMatch[1];
-        sender = sender.charAt(0).toUpperCase() + sender.slice(1);
-        label = getOrCreateLabel(sender);
-        createLabelFilter(label, to);
-      }
-      if (label && addLabel) {
-        var labels = getParentLabels(label);
-        labels.push(label.id);
-        Gmail.Users.Threads.modify(
-          { addLabelIds: labels },
-          userId,
-          thread.id
-        )
       }
     }
     if(nextPageToken) {
@@ -51,18 +49,23 @@ function labelEmails() {
         threads = threadsResponse.threads;
     }
   }
-
-
+  Logger.log("Done!");
 }
 
 function getOrCreateLabel(name) {
   var labels = Gmail.Users.Labels.list(userId).labels;
+  var newLabelName = name.replace(/\s+/g, '').toLowerCase();
+  Logger.log("Name: " + name);
+  if(newLabelName.indexOf("/") != -1) {
+    newLabelName = newLabelName.substring(newLabelName.lastIndexOf("/") + 1)
+  }
   for(var currentLabel of labels) {
     var currentLabelName = currentLabel.name.replace(/\s+/g, '').toLowerCase();
+    //Logger.log("Testing label: " + currentLabelName);
     if(currentLabelName.indexOf("/") != -1) {
       currentLabelName = currentLabelName.substring(currentLabelName.lastIndexOf("/") + 1)
     }
-    if(currentLabel.type != "system" && currentLabelName == name.toLowerCase()) {
+    if(currentLabel.type != "system" && currentLabelName == newLabelName) {
       Logger.log("Label already exists " + currentLabel.name);
       return currentLabel;
     }
